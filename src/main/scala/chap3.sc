@@ -1,3 +1,39 @@
+// 3.2 tail
+def tail[A](as: List[A]): List[A] = as match {
+  case Nil => as
+  case _ :: xs => xs
+}
+
+// 3.3
+def setHead[A](as:List[A], newHead: A) = as match {
+  case Nil => List(newHead)
+  case _ :: xs => newHead :: xs
+}
+
+// Data sharing
+// 3.4
+def drop[A] (l: List[A], n: Int): List[A] =
+  if (n <= 0) l
+  else l match {
+    case Nil => Nil
+    case x :: xs => drop(xs, n-1)
+  }
+
+// 3.5 dropWhile
+def dropWhile[A](l: List[A], f: A => Boolean): List[A] = l match {
+  case x :: xs if (f(x)) => dropWhile(xs, f)
+  case _ => l
+}
+
+// 3.6 init
+def init[A](l: List[A]): List[A] = l match {
+  case _ :: Nil => List()
+  case x :: xs => x :: init(xs)
+}
+
+init(List(1,2,3,4,5))
+
+
 // 3.9
 def foldRight[A,B](as: List[A], z: B)(f: (A, B) => B): B = as match {
   case Nil => z
@@ -48,3 +84,60 @@ def Concat[A](xs: List[A], ys: List[A]): List[A] =
   (xs foldRight ys)(_ :: _)
 
 Concat(List(1,2,3,4,5), List(10,12,14,16))
+
+// 3.16
+def addOne(l: List[Int]): List[Int] =
+  foldRight(l, List[Int]())((x, acc) => x + 1 :: acc)
+
+addOne(List(12,3,4))
+
+// 3.17
+def double2String(l: List[Double]): String =
+  l match {
+    case Nil => ""
+    case x :: xs => x.toString + double2String(xs)
+  }
+
+// 3.18 map
+def map[A,B](as: List[A])(f: A => B): List[B] =
+  foldRightLeft(as, List[B]())((a, acc) => f(a) :: acc)
+
+map(List(1,2,3))(x => x + 1)
+
+// 3.19 filter
+def filter[A](as: List[A])(f: A => Boolean): List[A] =
+  foldRight(as, List[A]())((x, acc) => if (f(x)) x :: acc else acc)
+
+// 3.20 flatMap
+def flatMap[A,B](as: List[A])(f: A => List[B]): List[B] = {
+  foldRight(map(as)(f), List[B]())((x, acc) => x ::: acc)
+}
+
+flatMap(List(1,2,3))(i => List(i,i))
+
+// 3.21
+def filterViaFlatMap[A](as: List[A])(f: A => Boolean): List[A] =
+  flatMap(as)(x => if (f(x)) List(x) else List())
+
+filterViaFlatMap(List(1,2,3))(x => x > 1)
+
+// 3.22
+def addLists(a: List[Int], b: List[Int]): List[Int] =
+  (a,b) match {
+    case (Nil, _) => b
+    case (_, Nil) => a
+    case (x::xs, y::ys) => x+y :: addLists(xs, ys)
+  }
+
+addLists(List(1,2,3), List(4,5,6))
+
+// 3.23
+def zipWith[A,B,C](a: List[A], b: List[B])(f: (A, B) => C): List[C] =
+  (a, b) match {
+    case (Nil, _) => Nil
+    case (_, Nil) => Nil
+    case (x :: xs, y :: ys) => f(x, y) :: zipWith(xs, ys)(f)
+  }
+
+// 3.24
+//def hasSubsequence[A](sup: List[A], sub: List[A]): Boolean = ???
