@@ -141,3 +141,57 @@ def zipWith[A,B,C](a: List[A], b: List[B])(f: (A, B) => C): List[C] =
 
 // 3.24
 //def hasSubsequence[A](sup: List[A], sub: List[A]): Boolean = ???
+
+
+// TREES
+
+sealed trait Tree[+A]
+case class Leaf[A](value: A) extends Tree[A]
+case class Branch[A](left: Tree[A], right: Tree[A]) extends Tree[A]
+
+// 3.25 count number of nodes in tree
+def size[A](t: Tree[A]): Int = t match {
+  case Leaf(_) => 1
+  case Branch(l,r) => 1 + size(l) + size(r)
+}
+
+def size2[A](t: Tree[A]): Int =
+  fold(t)(_ => 1)(1 + _ + _)
+  //fold(t)(_ => 1)((l,r) => 1 + l + r)
+
+// 3.26 max elem in tree
+def maximum(t: Tree[Int]): Int = t match {
+  case Leaf(v) => v
+  case Branch(l,r) => maximum(l) max maximum(r)
+}
+
+def maximum2(t: Tree[Int]): Int =
+  fold(t)(v => v)(_ max _)
+  //fold(t)(v => v)((l,r) => l max r)
+
+// 3.27 max depth of tree
+def depth[A](t: Tree[A]): Int = t match {
+  case Leaf(_) => 0
+  case Branch(l,r) => 1 + depth(l) max depth(r)
+}
+
+def depth2[A](t: Tree[A]): Int =
+  fold(t)(_ => 0)(1 + _ max _)
+
+// 3.28 modify each elem in tree with given func
+def mapTree[A, B](t: Tree[A])(f: A => B): Tree[B] = t match {
+  case Leaf(v) => Leaf(f(v))
+  case Branch(l, r) => Branch(mapTree(l)(f), mapTree(r)(f))
+}
+
+def mapTree2[A, B](t: Tree[A])(f: A => B): Tree[B] =
+  fold(t)(v => Leaf(f(v)): Tree[B])(Branch(_,_))
+
+// 3.29
+def fold[A, B](t: Tree[A])(l: A => B)(b: (B,B) => B): B = t match {
+  case Leaf(v) => l(v)
+  case Branch(left,right) => b(fold(left)(l)(b),fold(right)(l)(b))
+}
+
+
+
