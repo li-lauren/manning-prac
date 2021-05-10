@@ -59,3 +59,39 @@ def traverse[A,B](a: List[A])(f: A => Option[B]): Option[List[B]] =
 
 def sequenceViaTraverse[A](a: List[Option[A]]): Option[List[A]] =
   traverse(a)(x => x)
+
+// EITHER
+sealed trait Either[+E, +A]
+case class Left[+E](value: E) extends Either[E, Nothing] // error case
+case class Right[+A](value: A) extends Either[Nothing, A] // success case
+
+// 4.6 Either higher order functions
+
+trait Either[+E, +A] {
+  def map[B](f: A => B): Either[E,B] = this match {
+    case Left(e) => Left(e)
+    case Right(a) => Right(f(a))
+  }
+
+  def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] = this match {
+    case Left(e) => Left(e)
+    case Right(a) => f(a)
+  }
+
+  def orElse[EE >: E, B >: A](b: => Either[EE, B]): Either[EE, B] =
+    this match {
+      case Left(_) => b
+      case Right(a) => Right(a)
+    }
+
+  def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): Either[EE, C] =
+    this flatMap(aa => b map (bb => f(aa, bb)))
+}
+
+// 4.7 sequence and traverse for Either
+def sequence_either[E, A](es: List[Either[E, A]]): Either[E, List[A]] =
+  traverse_either(es)(x => x)
+
+def traverse_either[E, A, B](as: List[A])(f: A => Either[E, B]): Either[E, List[B]] =
+  as.foldRight[Either[E,List[B]]](Right(Nil))(
+    (a, b) => f(a).map2(b)(_ :: _))
