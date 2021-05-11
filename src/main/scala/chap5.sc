@@ -1,6 +1,6 @@
 import Stream._
-trait Stream[+A] {
 
+sealed trait Stream[+A] {
   def foldRight[B](z: => B)(f: (A, => B) => B): B = // The arrow `=>` in front of the argument type `B` means that the function `f` takes its second argument by name and may choose not to evaluate it.
     this match {
       case Cons(h,t) => f(h(), t().foldRight(z)(f)) // If `f` doesn't evaluate its second argument, the recursion never occurs.
@@ -25,24 +25,48 @@ trait Stream[+A] {
     go(this, List()).reverse
   }
 
-  def take(n: Int): Stream[A] = {
-    def go(s: Stream[A], acc: Stream[A], i: Int): Stream[A] = s match {
-      case Cons(h, t) if (i != n) => go(t(), cons(h(), acc), i + 1)
-      case _ => acc
-    }
-    go(this, Empty, 1)
+  def take(n: Int): Stream[A] = this match {
+    case Cons(h, t) if n > 1 => cons(h(), t().take(n-1))
+    case Cons(h, _) if n == 1 => cons(h(), empty)
+    case _ => empty
   }
 
-  def drop(n: Int): Stream[A] = ???
+  @annotation.tailrec
+  final def drop(n: Int): Stream[A] = this match {
+    case Cons(_, t) if n > 1 => t().drop(n-1)
+    case _ => this
+  }
 
-  def takeWhile(p: A => Boolean): Stream[A] = ???
+  def takeWhile(p: A => Boolean): Stream[A] =
+//    this match {
+//      case Cons(h, t) if (p(h())) => cons(h(), t() takeWhile p)
+//      case _ => empty
+//    }
+   foldRight(empty)((a,b) => if (p(a)) cons(a, b) else empty)
 
-  def forAll(p: A => Boolean): Boolean = ???
+  def forAll(p: A => Boolean): Boolean =
+//    this match {
+//      case Cons(h, t) => p(h()) && (t() forAll p)
+//      case _ => true
+//    }
+    foldRight(true)((a, b) => p(a) && b)
 
-  def headOption: Option[A] = ???
+  def headOption: Option[A] = foldRight(None: Option[A])((a,_) => Some(a))
 
   // 5.7 map, filter, append, flatmap using foldRight. Part of the exercise is
   // writing your own function signatures.
+  def map[B](f: A => B): Stream[B] =
+    foldRight(empty[B])((a,b) => cons(f(a), b))
+
+  def filter(p: A => Boolean): Stream[A] =
+    foldRight(empty[A])((a,b) => if (p(a)) cons(a, b) else b)
+
+  // why does the argument need to be non-strict here?
+  def append[B>:A](s: => Stream[B]): Stream[B] =
+    foldRight(s)((a,b) => cons(a, b))
+
+  def flatMap[B](f: A => Stream[B]): Stream[B] =
+    foldRight(empty[B])((a,b) => f(a) append b)
 
   def startsWith[B](s: Stream[B]): Boolean = ???
 }
@@ -67,3 +91,5 @@ object Stream {
 
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = ???
 }
+
+//Stream(1,2,3,4,5).take(3)
