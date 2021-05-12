@@ -106,7 +106,32 @@ sealed trait Stream[+A] {
   def flatMap[B](f: A => Stream[B]): Stream[B] =
     foldRight(empty[B])((a,b) => f(a) append b)
 
-  def startsWith[B](s: Stream[B]): Boolean = ???
+  def startsWith[B](s: Stream[B]): Boolean = {
+    val zippedStreams = this.zipWith(s)((_,_))
+    zippedStreams.forAll(a => a._1 == a._2)
+  }
+
+  def tails: Stream[Stream[A]] =
+    unfold(this) {
+      case Empty => None
+      case s => Some(s, s drop 1)
+    } append Stream(Empty)
+
+  def hasSubsequence[A](s: Stream[A]): Boolean =
+    tails exists (_ startsWith s)
+
+//  def scanRight[B](z: B)(f: Stream[A] => B): Stream[B] =
+//    unfold(this) {
+//      case Empty => None
+//      case s => Some(f(s), s drop 1)
+//    } wrong
+
+  def scanRight[B](z: B)(f:(A, => B) => B): Stream[B] =
+    foldRight((z, Stream(z)))((a, p0) => {
+    lazy val p1 = p0
+    val b2 = f(a, p1._1)
+      (b2, cons(b2, p1._2))
+  })._2
 }
 case object Empty extends Stream[Nothing]
 case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
