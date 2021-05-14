@@ -38,6 +38,11 @@ object RNG {
     ((i / (Int.MaxValue+1)).toDouble, rng2)
   }
 
+  def doubleViaMap: Rand[Double] = {
+    // map(nonNegativeInt)(i => (i / (Int.MaxValue+1)).toDouble)
+    map(nonNegativeInt)(_ / (Int.MaxValue.toDouble + 1))
+  }
+
   def intDouble(rng: RNG): ((Int,Double), RNG) = {
     val (i, rng2) = nonNegativeInt(rng)
     val (d, finRng) = double(rng2)
@@ -62,9 +67,23 @@ object RNG {
       (i :: b._1, r)
     })
 
-  def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] = ???
+  def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
+    rng => {
+      val (a, rngA) = ra(rng)
+      val (b, rngB) = rb(rngA)
+      (f(a,b), rngB)
+    }
 
-  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] = ???
+  def sequence[A](fs: List[Rand[A]]): Rand[List[A]] =
+    rng => {
+      fs.foldLeft((List[A](), rng))((aLstTuple, s) => {
+        val (a, rngA) = s(aLstTuple._2)
+        (a :: aLstTuple._1, rngA)
+      })
+    }
+
+  def intsViaSequence(count: Int): Rand[List[Int]] =
+    sequence(List.fill(count)(int))
 
   def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] = ???
 }
@@ -80,6 +99,7 @@ case class State[S,+A](run: S => (A, S)) {
 
 val rng = RNG.Simple(42)
 RNG.ints(5)(rng)
+RNG.intsViaSequence(5)(rng)
 
 
 sealed trait Input
